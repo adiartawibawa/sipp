@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 6401012009,640101,SAMURANGGAU,NULL,NULL,76252
 6401012010,640101,BUSUI,-1.8073037,115.8285153,76252
 6401012011,640101,BATU KAJANG,-1.8324751,115.91132,76252

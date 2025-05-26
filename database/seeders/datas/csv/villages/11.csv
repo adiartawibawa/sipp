@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 1101012001,110101,KEUDE BAKONGAN,2.9300043,97.4732991,23773
 1101012002,110101,UJONG MANGKI,NULL,NULL,23773
 1101012003,110101,UJONG PADANG,4.0780078,96.3093164,23772

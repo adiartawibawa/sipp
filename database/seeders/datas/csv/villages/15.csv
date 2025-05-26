@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 1501011004,150101,LEMPUR TENGAH,-2.3089897,101.5532255,NULL
 1501012001,150101,SELAM PAUNG,NULL,NULL,37174
 1501012002,150101,AIR MUMU,-2.221426,101.6328435,37174

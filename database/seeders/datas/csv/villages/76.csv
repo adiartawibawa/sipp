@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 7601011006,760101,BAMBALAMOTU,-1.104892,119.5339711,NULL
 7601012003,760101,POLEWALI,-3.0794621,122.4948384,NULL
 7601012004,760101,RANDOMAYANG,-1.05103,119.4817652,NULL

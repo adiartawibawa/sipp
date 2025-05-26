@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 3501012001,350101,WIDORO,-7.6162268,109.6669068,63554
 3501012002,350101,SAWAHAN,-0.9484156,100.3652289,63554
 3501012003,350101,KALAK,-8.2149435,110.9327809,63554

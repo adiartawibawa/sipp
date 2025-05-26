@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 7401011001,740101,19 NOPEMBER,-4.0738749,121.6910426,NULL
 7401011002,740101,WUNDULAKO,-4.1060493,121.662532,93561
 7401011003,740101,LAMEKONGGA,-4.1220589,121.6753626,93561

@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 3201011001,320101,PONDOK RAJEG,-6.4605558,106.8207875,16913
 3201011002,320101,KARADENAN,-6.5198749,106.8119382,16913
 3201011003,320101,HARAPANJAYA,NULL,NULL,16914

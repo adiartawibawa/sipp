@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 1701012001,170101,BATU AMPAR,-1.0142584,102.644587,38553
 1701012002,170101,RANTAU SIALANG,-0.6533015,101.4779299,38553
 1701012003,170101,BUMI AGUNG,-3.8913674,104.8892473,38553

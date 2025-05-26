@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 8201012001,820101,GUFASA,1.0624369,127.4668058,97752
 8201012002,820101,GUAIMAADU,NULL,NULL,97752
 8201012003,820101,JALAN BARU,-0.6369829,100.1318163,97752

@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 6201011011,620101,CANDI,-1.445482,101.9176916,74181
 6201011012,620101,KUMAI HULU,-2.6819462,111.7733902,74181
 6201011013,620101,KUMAI HILIR,-2.7988121,111.7316557,74181

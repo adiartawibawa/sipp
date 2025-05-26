@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 2101041005,210104,KAWAL,0.9965347,104.6238048,NULL
 2101042001,210104,GUNUNG KIJANG,0.9410092,104.6238048,29153
 2101042002,210104,MALANG RAPAT,1.1080526,104.577181,29153

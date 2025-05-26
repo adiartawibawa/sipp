@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 1401011011,140101,BANGKINANG,0.3413567,101.0279545,28411
 1401011013,140101,LANGGINI SIALANG,NULL,NULL,NULL
 1401012009,140101,KUMANTAN,0.3471101,101.0400653,28413

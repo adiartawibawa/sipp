@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 9201011001,920101,MAKBON,-0.8208263,131.5612423,98445
 9201012002,920101,ASBAKEN,-0.7761299,131.700902,98445
 9201012004,920101,MALAUMKARTA,-0.8273612,131.6111616,98445

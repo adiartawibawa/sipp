@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 5201011001,520101,GERUNG UTARA,-8.6780519,116.1270801,NULL
 5201011004,520101,DASAN GERES,-8.682214,116.1388973,NULL
 5201011011,520101,GERUNG SELATAN,-8.6919861,116.1256029,NULL

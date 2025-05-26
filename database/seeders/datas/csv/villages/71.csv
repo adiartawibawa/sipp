@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 7101052001,710105,AYONG,0.8370934,123.8885644,95756
 7101052002,710105,BABO,4.2800483,97.8667182,95756
 7101052003,710105,BOLANGAT,0.7444213,123.8299639,95756

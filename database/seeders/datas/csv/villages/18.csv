@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 1801042001,180104,HAJIMENA,-5.3549285,105.2282571,35562
 1801042002,180104,SIDOSARI,-5.329151,105.2458111,35562
 1801042003,180104,PEMANGGILAN,-5.3426284,105.2136302,35562

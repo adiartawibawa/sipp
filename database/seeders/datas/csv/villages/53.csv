@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 5301042003,530104,BOKONUSAN,-10.2178671,123.3766669,85353
 5301042004,530104,OTAN,-10.1765805,123.3991028,85353
 5301042005,530104,UITAO,-10.1946421,123.4103188,85353

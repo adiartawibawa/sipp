@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 7201011006,720101,BUGIS,-6.3809959,107.9324442,94762
 7201011007,720101,BALANTANG,-1.1091457,122.373094,94762
 7201011008,720101,BATUI,-1.281179,122.559097,94762

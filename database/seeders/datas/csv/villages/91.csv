@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 9101011002,910101,SAMKAI,-8.5224879,140.3972331,99615
 9101011003,910101,KARANG INDAH,-4.798946,103.8940996,99614
 9101011004,910101,MANDALA,-6.7761982,108.4246374,99616

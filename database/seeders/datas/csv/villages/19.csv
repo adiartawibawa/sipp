@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 1901011001,190101,SUNGAILIAT,-1.877183,106.1149182,33211
 1901011002,190101,SRI MENANTI,-2.59563,104.7112631,33214
 1901011003,190101,KUDAI,NULL,NULL,33213

@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 8101011009,810101,HOLLO,-3.2444215,129.086701,97552
 8101012001,810101,TAMILOUW,-3.232556,129.2583293,97552
 8101012002,810101,SEPA,-3.1279268,129.1127352,97552

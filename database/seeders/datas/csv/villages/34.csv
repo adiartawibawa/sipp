@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 3401012001,340101,JANGKARAN,-7.8923445,110.0360331,55654
 3401012002,340101,SINDUTAN,-7.8814305,110.0479439,55654
 3401012003,340101,PALIHAN,-7.8966199,110.0538994,55654

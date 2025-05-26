@@ -1,4 +1,4 @@
-id_desa_kelurahan,id_kecamatan,nama,latitude,longitude,kode_pos
+id,district_id,name,lat,lon,postal_code
 3301012001,330101,TAMBAKREJA,-7.3830298,108.6620986,53263
 3301012002,330101,BUMIREJA,-7.5452932,108.7897976,53263
 3301012003,330101,CIKLAPA,-7.5009787,108.7987084,53263
