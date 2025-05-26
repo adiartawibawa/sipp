@@ -2,11 +2,14 @@
 
 namespace App\Filament\Clusters\Administrasi\Resources\ProvinceResource\Actions;
 
+use App\Models\Regions\Province;
 use App\Services\CsvProcessor;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -18,11 +21,11 @@ class ImportProvincesAction extends Action
             ->label('Import CSV')
             ->icon('heroicon-o-arrow-up-tray')
             ->color('success')
-            ->modalHeading('Import Provinces from CSV')
-            ->modalDescription('Upload a CSV file with province data. The file should contain columns: id, name, lat, lon')
+            ->modalHeading('Import Province from CSV')
+            ->modalDescription('Upload a CSV file with province data. Format: id, name, lat, lon')
             ->modalSubmitActionLabel('Import')
             ->form([
-                \Filament\Forms\Components\FileUpload::make('file')
+                FileUpload::make('file')
                     ->label('CSV File')
                     ->required()
                     ->acceptedFileTypes([
@@ -30,7 +33,7 @@ class ImportProvincesAction extends Action
                         'text/plain',
                         'application/csv',
                         'text/comma-separated-values',
-                        'application/vnd.ms-excel'
+                        'application/vnd.ms-excel',
                     ])
                     ->directory('province-imports')
                     ->preserveFilenames()
@@ -40,67 +43,66 @@ class ImportProvincesAction extends Action
             ])
             ->action(function (array $data) {
                 try {
-                    // Get the correct file path using storage disk
-                    $filePath = Storage::disk('public')->path($data['file']);
+                    $file = $data['file'];
 
-                    // Verify file exists and is readable
-                    if (!Storage::disk('public')->exists($data['file'])) {
-                        throw new Exception("The uploaded file could not be found.");
+                    if (!Storage::disk('public')->exists($file)) {
+                        throw new Exception("File not found.");
                     }
 
+                    $filePath = Storage::disk('public')->path($file);
+
                     if (!is_readable($filePath)) {
-                        throw new Exception("The uploaded file is not readable.");
+                        throw new Exception("File is not readable.");
                     }
 
                     $csvProcessor = app(CsvProcessor::class);
-
-                    // Process CSV with proper headers
-                    $rows = $csvProcessor->process($filePath, [
+                    $chunks = $csvProcessor->process($filePath, [
                         'header' => ['id', 'name', 'lat', 'lon'],
                         'skipHeader' => true,
+                        'chunkSize' => 500,
                     ]);
 
-                    $importCount = 0;
-                    $errors = [];
+                    $totalImported = 0;
+                    $allErrors = [];
 
-                    foreach ($rows as $index => $row) {
+                    $chunks->each(function ($chunk, $chunkIndex) use (&$totalImported, &$allErrors) {
+                        DB::beginTransaction();
+
                         try {
-                            // Validate required fields
-                            if (empty($row['id']) || empty($row['name'])) {
-                                throw new Exception("Row {$index}: Missing required fields (id or name)");
+                            foreach ($chunk as $rowIndex => $row) {
+                                try {
+                                    self::importRow($row, $rowIndex);
+                                    $totalImported++;
+                                } catch (Exception $e) {
+                                    $errorMessage = "Row {$rowIndex}: " . $e->getMessage();
+                                    $allErrors[] = $errorMessage;
+                                    Log::error('[Province Import] ' . $errorMessage, ['row' => $row]);
+                                }
                             }
 
-                            // Process data
-                            \App\Models\Regions\Province::updateOrCreate(
-                                ['id' => $row['id']],
-                                [
-                                    'name' => $row['name'],
-                                    'slug' => Str::slug($row['name']),
-                                    'latitude' => self::parseCoordinate($row['lat'] ?? null),
-                                    'longitude' => self::parseCoordinate($row['lon'] ?? null),
-                                ]
-                            );
-                            $importCount++;
-                        } catch (\Exception $e) {
-                            $errors[] = "Row {$index}: " . $e->getMessage();
-                            continue;
+                            DB::commit();
+                        } catch (Exception $e) {
+                            DB::rollBack();
+                            Log::critical("[Province Import] Failed to import chunk {$chunkIndex}: " . $e->getMessage());
+                            $allErrors[] = "Chunk {$chunkIndex} failed: " . $e->getMessage();
                         }
-                    }
+                    });
 
-                    // Prepare notification message
-                    $message = "Successfully imported {$importCount} provinces";
-                    if (count($errors) > 0) {
-                        $message .= "\n\n" . count($errors) . " rows failed:\n" . implode("\n", array_slice($errors, 0, 5));
-                        if (count($errors) > 5) {
-                            $message .= "\n...and " . (count($errors) - 5) . " more";
+                    $message = "Successfully imported {$totalImported} provinces.";
+                    if ($allErrors) {
+                        $message .= "\n\n" . count($allErrors) . " rows failed:\n" .
+                            implode("\n", array_slice($allErrors, 0, 5));
+
+                        if (count($allErrors) > 5) {
+                            $message .= "\n...and " . (count($allErrors) - 5) . " more";
                         }
                     }
 
                     Notification::make()
-                        ->title($importCount > 0 ? 'Import Completed' : 'Import Failed')
+                        ->title($totalImported > 0 ? 'Import Completed' : 'Import Failed')
                         ->body($message)
-                        ->icon($importCount > 0 ? 'heroicon-o-check-circle' : 'heroicon-o-exclamation-circle')
-                        ->color($importCount > 0 ? 'success' : 'danger')
+                        ->icon($totalImported > 0 ? 'heroicon-o-check-circle' : 'heroicon-o-exclamation-circle')
+                        ->color($totalImported > 0 ? 'success' : 'danger')
                         ->send();
                 } catch (Exception $e) {
                     Notification::make()
@@ -110,11 +112,36 @@ class ImportProvincesAction extends Action
                         ->color('danger')
                         ->send();
 
+                    Log::error('[Province Import] Critical Error: ' . $e->getMessage());
+
                     throw $e;
                 }
             });
     }
 
+    /**
+     * Proses satu baris data untuk disimpan.
+     */
+    protected static function importRow(array $row, int $index): void
+    {
+        if (empty($row['id']) || empty($row['name'])) {
+            throw new Exception("Missing required fields (id or name).");
+        }
+
+        Province::updateOrCreate(
+            ['id' => $row['id']],
+            [
+                'name' => $row['name'],
+                'slug' => Str::slug($row['name']),
+                'latitude' => self::parseCoordinate($row['lat'] ?? null),
+                'longitude' => self::parseCoordinate($row['lon'] ?? null),
+            ]
+        );
+    }
+
+    /**
+     * Parsing koordinat ke float/null.
+     */
     protected static function parseCoordinate($value): ?float
     {
         return is_numeric($value) ? (float) $value : null;
