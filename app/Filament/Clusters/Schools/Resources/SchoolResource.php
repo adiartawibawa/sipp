@@ -23,6 +23,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
@@ -59,7 +61,7 @@ class SchoolResource extends Resource
                                         Section::make('Identitas Sekolah')
                                             ->schema([
                                                 Forms\Components\TextInput::make('npsn')
-                                                    ->label('NPSN')
+                                                    ->label('NPSN - Nomor Pokok Sekolah Nasional')
                                                     ->unique(ignoreRecord: true)
                                                     ->maxLength(8)
                                                     ->numeric()
@@ -79,18 +81,17 @@ class SchoolResource extends Resource
                                                     ->disabled()
                                                     ->dehydrated(),
                                                 Forms\Components\TextInput::make('nss')
-                                                    ->label('NSS')
+                                                    ->label('NSS - Nomor Statistik Sekolah')
                                                     ->maxLength(20),
                                                 Forms\Components\Select::make('edu_type')
                                                     ->label('Jenjang Pendidikan')
-                                                    ->options([
-                                                        'tk' => 'TK',
-                                                        'sd' => 'SD',
-                                                        'smp' => 'SMP',
-                                                        'sma' => 'SMA',
-                                                        'smk' => 'SMK',
-                                                        'slb' => 'SLB',
-                                                    ])
+                                                    ->options(
+                                                        collect(School::defaultEduType())
+                                                            ->mapWithKeys(fn($item) => [
+                                                                $item['code'] => "{$item['code']} - {$item['name']}"
+                                                            ])
+                                                            ->toArray()
+                                                    )
                                                     ->required(),
                                                 Forms\Components\Select::make('status')
                                                     ->label('Status Sekolah')
@@ -107,11 +108,17 @@ class SchoolResource extends Resource
                                                     ->numeric()
                                                     ->minValue(1900)
                                                     ->maxValue(Carbon::now()->year),
+                                                SpatieMediaLibraryFileUpload::make('decree_file')
+                                                    ->label('File SK Pendirian Sekolah')
+                                                    ->collection('school_decrees')
+                                                    ->acceptedFileTypes(['application/pdf'])
+                                                    ->maxSize(1024 * 5)
+                                                    ->openable(true),
                                                 Forms\Components\TextInput::make('op_permit_no')
                                                     ->label('Nomor Izin Operasional')
                                                     ->maxLength(100),
                                                 Forms\Components\DatePicker::make('op_permit_date')
-                                                    ->label('Tanggal Izin Operasional'),
+                                                    ->label('Tanggal Izin Operasional')->columnSpan(2),
                                                 Forms\Components\Select::make('accreditation')
                                                     ->label('Akreditasi')
                                                     ->options([
@@ -130,9 +137,15 @@ class SchoolResource extends Resource
                                                     ->numeric()
                                                     ->minValue(1900)
                                                     ->maxValue(Carbon::now()->year),
-                                                Forms\Components\TextInput::make('curriculum')
+                                                Forms\Components\Select::make('curriculum')
                                                     ->label('Kurikulum')
-                                                    ->maxLength(100),
+                                                    ->options(
+                                                        collect(School::defaultCuriculum())
+                                                            ->mapWithKeys(fn($item) => [
+                                                                $item['code'] => "{$item['code']} - {$item['name']}"
+                                                            ])
+                                                            ->toArray()
+                                                    ),
                                             ]),
                                     ]),
                             ]),
@@ -214,6 +227,18 @@ class SchoolResource extends Resource
                                             ]),
                                     ]),
                             ]),
+                        Tabs\Tab::make('Foto & Media')
+                            ->schema([
+                                SpatieMediaLibraryFileUpload::make('photo')
+                                    ->label('Foto/Video Sekolah')
+                                    ->collection('school_galleries')
+                                    ->acceptedFileTypes(['image/*'])
+                                    ->maxSize(1024 * 5)
+                                    ->multiple()
+                                    ->reorderable()
+                                    ->openable(true)
+                                    ->columnSpanFull(),
+                            ]),
                     ])
                     ->columnSpanFull(),
             ]);
@@ -223,29 +248,25 @@ class SchoolResource extends Resource
     {
         return $table
             ->columns([
-                Split::make([
-                    TextColumn::make('npsn')
-                        ->label('NPSN')
-                        ->searchable()
-                        ->sortable(),
-                    TextColumn::make('name')
-                        ->label('Nama Sekolah')
-                        ->searchable()
-                        ->sortable()
-                        ->weight('bold')
-                        ->description(fn(School $record) => $record->edu_type . ' - ' . $record->status),
-                ]),
-                Stack::make([
-                    TextColumn::make('village.name')
-                        ->label('Desa/Kelurahan')
-                        ->size('sm'),
-                    TextColumn::make('district.name')
-                        ->label('Kecamatan')
-                        ->size('sm'),
-                    TextColumn::make('regency.name')
-                        ->label('Kabupaten/Kota')
-                        ->size('sm'),
-                ]),
+                TextColumn::make('npsn')
+                    ->label('NPSN')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('name')
+                    ->label('Nama Sekolah')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->description(fn(School $record) => Str::upper("{$record->edu_type} - {$record->status}")),
+                TextColumn::make('village.name')
+                    ->label('Desa/Kelurahan')
+                    ->size('sm'),
+                TextColumn::make('district.name')
+                    ->label('Kecamatan')
+                    ->size('sm'),
+                TextColumn::make('regency.name')
+                    ->label('Kabupaten/Kota')
+                    ->size('sm'),
                 TextColumn::make('accreditation')
                     ->label('Akreditasi')
                     ->badge()
@@ -265,6 +286,7 @@ class SchoolResource extends Resource
                     ->counts('lands')
                     ->badge(),
             ])
+
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status Sekolah')

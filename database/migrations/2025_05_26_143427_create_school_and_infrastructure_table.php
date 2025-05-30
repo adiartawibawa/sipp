@@ -13,6 +13,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('npsn')->unique()->nullable();
             $table->string('name');
+            $table->string('slug')->unique()->nullable();
             $table->string('nss')->unique()->nullable();
             $table->string('edu_type')->nullable(); // education_type
             $table->string('status')->nullable(); // school_status
