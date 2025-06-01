@@ -3,12 +3,9 @@
 namespace App\Filament\Clusters\Schools\Resources;
 
 use App\Filament\Clusters\Schools;
-use App\Filament\Clusters\Schools\Resources\InfraConditionResource\Pages;
-<<<<<<< HEAD
-use App\Filament\Clusters\Schools\Resources\InfraConditionResource\RelationManagers;
-=======
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
-use App\Models\Schools\InfraCondition;
+use App\Filament\Clusters\Schools\Resources\FacilityConditionResource\Pages;
+use App\Filament\Clusters\Schools\Resources\FacilityConditionResource\RelationManagers;
+use App\Models\Schools\FacilityCondition;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -18,31 +15,23 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
-class InfraConditionResource extends Resource
+class FacilityConditionResource extends Resource
 {
-    protected static ?string $model = InfraCondition::class;
+    protected static ?string $model = FacilityCondition::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
     protected static ?string $cluster = Schools::class;
 
-    protected static ?string $modelLabel = 'Kondisi Infrastruktur';
+    protected static ?string $modelLabel = 'Kondisi Fasilitas';
 
-    protected static ?string $pluralModelLabel = 'Kondisi Infrastruktur';
+    protected static ?string $pluralModelLabel = 'Kondisi Fasilitas';
 
-<<<<<<< HEAD
-    protected static ?string $navigationLabel = 'Kondisi Infra';
-
-    protected static ?string $navigationGroup = 'Manajemen Infrastruktur';
-
-    protected static ?int $navigationSort = 22;
-=======
-    protected static ?string $navigationLabel = 'Kondisi Infrastruktur';
+    protected static ?string $navigationLabel = 'Kondisi Fasilitas';
 
     protected static ?string $navigationGroup = 'Manajemen Infrastruktur';
 
-    protected static ?int $navigationSort = 23;
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
+    protected static ?int $navigationSort = 24;
 
     public static function form(Form $form): Form
     {
@@ -50,21 +39,22 @@ class InfraConditionResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informasi Kondisi')
                     ->schema([
-                        Forms\Components\MorphToSelect::make('entity')
-                            ->label('Entitas Terkait')
-                            ->types([
-                                Forms\Components\MorphToSelect\Type::make(\App\Models\Schools\Building::class)
-                                    ->titleAttribute('name'),
-                                Forms\Components\MorphToSelect\Type::make(\App\Models\Schools\Land::class)
-                                    ->titleAttribute('name'),
-                            ])
-<<<<<<< HEAD
-                            ->required(),
-=======
-                            ->required()
+                        Forms\Components\Select::make('facil_id')
+                            ->label('Fasilitas')
+                            ->relationship('facility', 'name')
                             ->searchable()
-                            ->preload(),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
+                            ->preload()
+                            ->required()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Nama Fasilitas')
+                                    ->required()
+                                    ->maxLength(255),
+
+                                Forms\Components\TextInput::make('code')
+                                    ->label('Kode Fasilitas')
+                                    ->maxLength(50),
+                            ]),
 
                         Forms\Components\Select::make('condition')
                             ->label('Kondisi')
@@ -92,37 +82,27 @@ class InfraConditionResource extends Resource
                             ->minValue(0)
                             ->maxValue(100)
                             ->step(0.01)
-<<<<<<< HEAD
-                            ->required(),
-=======
                             ->required()
                             ->suffix('%'),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
 
                         Forms\Components\DatePicker::make('checked_at')
                             ->label('Tanggal Pengecekan')
                             ->required()
-<<<<<<< HEAD
-                            ->default(now()),
-=======
                             ->default(now())
                             ->maxDate(now()),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
 
                         Forms\Components\Textarea::make('notes')
                             ->label('Catatan')
                             ->columnSpanFull(),
-<<<<<<< HEAD
-=======
 
                         Forms\Components\FileUpload::make('photos')
                             ->label('Dokumentasi Foto')
                             ->image()
                             ->multiple()
-                            ->directory('infra-conditions')
+                            ->directory('facility-conditions')
                             ->maxFiles(5)
-                            ->downloadable(),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
+                            ->downloadable()
+                            ->openable(),
                     ])
                     ->columns(2),
             ]);
@@ -132,32 +112,11 @@ class InfraConditionResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('entity_type')
-                    ->label('Jenis Entitas')
-                    ->formatStateUsing(fn($state) => match ($state) {
-                        \App\Models\Schools\Building::class => 'Bangunan',
-                        \App\Models\Schools\Land::class => 'Tanah',
-                        default => $state
-                    })
-<<<<<<< HEAD
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('entity.name')
-                    ->label('Nama Entitas')
-                    ->searchable(),
-=======
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('entity.name')
-                    ->label('Nama Entitas')
+                Tables\Columns\TextColumn::make('facility.name')
+                    ->label('Nama Fasilitas')
                     ->searchable()
-                    ->url(fn(InfraCondition $record) => match ($record->entity_type) {
-                        \App\Models\Schools\Building::class => BuildingResource::getUrl('edit', ['record' => $record->entity_id]),
-                        \App\Models\Schools\Land::class => LandResource::getUrl('edit', ['record' => $record->entity_id]),
-                        default => null
-                    }),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
+                    ->sortable()
+                    ->url(fn($record) => OtherFacilityResource::getUrl('edit', ['record' => $record->facil_id])),
 
                 Tables\Columns\TextColumn::make('condition')
                     ->label('Kondisi')
@@ -185,9 +144,6 @@ class InfraConditionResource extends Resource
                 Tables\Columns\TextColumn::make('checked_at')
                     ->label('Terakhir Dicek')
                     ->date()
-<<<<<<< HEAD
-                    ->sortable(),
-=======
                     ->sortable()
                     ->description(fn($record) => $record->checked_at->diffForHumans()),
 
@@ -196,7 +152,6 @@ class InfraConditionResource extends Resource
                     ->stacked()
                     ->limit(3)
                     ->limitedRemainingText(isSeparate: true),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('condition')
@@ -207,22 +162,16 @@ class InfraConditionResource extends Resource
                         'heavy' => 'Rusak Berat',
                     ]),
 
-                Tables\Filters\SelectFilter::make('entity_type')
-                    ->label('Jenis Entitas')
-                    ->options([
-                        \App\Models\Schools\Building::class => 'Bangunan',
-                        \App\Models\Schools\Land::class => 'Tanah',
-                    ]),
+                Tables\Filters\SelectFilter::make('facility')
+                    ->label('Fasilitas')
+                    ->relationship('facility', 'name')
+                    ->searchable()
+                    ->preload(),
 
                 Tables\Filters\Filter::make('checked_recently')
                     ->label('Dicek dalam 30 hari')
                     ->query(fn(Builder $query) => $query->where('checked_at', '>=', now()->subDays(30)))
                     ->toggle(),
-<<<<<<< HEAD
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-=======
 
                 Tables\Filters\Filter::make('needs_attention')
                     ->label('Perlu Perhatian')
@@ -247,7 +196,7 @@ class InfraConditionResource extends Resource
                         Forms\Components\Textarea::make('notes')
                             ->label('Catatan Tambahan'),
                     ])
-                    ->action(function (InfraCondition $record, array $data) {
+                    ->action(function (FacilityCondition $record, array $data) {
                         $record->update([
                             'condition' => $data['condition'],
                             'percentage' => match ($data['condition']) {
@@ -260,12 +209,19 @@ class InfraConditionResource extends Resource
                             'notes' => $record->notes ? $record->notes . "\n\n" . now()->format('Y-m-d') . ": " . $data['notes'] : $data['notes']
                         ]);
                     }),
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->before(function (Collection $records) {
+                            $recordsWithPhotos = $records->filter(fn($record) => !empty($record->photos));
+
+                            if ($recordsWithPhotos->isNotEmpty()) {
+                                throw new \Exception('Beberapa kondisi memiliki foto dokumentasi dan tidak dapat dihapus. Hapus foto terlebih dahulu.');
+                            }
+                        }),
+
                     Tables\Actions\BulkAction::make('update_check_date')
                         ->label('Perbarui Tanggal Pengecekan')
                         ->icon('heroicon-m-calendar')
@@ -275,29 +231,25 @@ class InfraConditionResource extends Resource
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),
                 ]),
-<<<<<<< HEAD
-            ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [];
-    }
-
-=======
             ])
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
             ]);
     }
 
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
+    public static function getRelations(): array
+    {
+        return [
+            // RelationManagers\MaintenanceHistoryRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListInfraConditions::route('/'),
-            'create' => Pages\CreateInfraCondition::route('/create'),
-            'edit' => Pages\EditInfraCondition::route('/{record}/edit'),
+            'index' => Pages\ListFacilityConditions::route('/'),
+            'create' => Pages\CreateFacilityCondition::route('/create'),
+            'edit' => Pages\EditFacilityCondition::route('/{record}/edit'),
         ];
     }
 }

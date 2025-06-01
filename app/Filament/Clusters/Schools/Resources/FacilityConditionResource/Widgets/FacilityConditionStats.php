@@ -1,39 +1,33 @@
 <?php
 
-namespace App\Filament\Clusters\Schools\Resources\InfraConditionResource\Widgets;
+namespace App\Filament\Clusters\Schools\Resources\FacilityConditionResource\Widgets;
 
-use App\Models\Schools\InfraCondition;
+use App\Models\Schools\FacilityCondition;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class InfraConditionStats extends BaseWidget
+class FacilityConditionStats extends BaseWidget
 {
     protected function getStats(): array
     {
-        $total = InfraCondition::count();
-        $good = InfraCondition::good()->count();
-        $light = InfraCondition::lightDamage()->count();
-        $heavy = InfraCondition::heavyDamage()->count();
+        $total = FacilityCondition::count();
+        $good = FacilityCondition::good()->count();
+        $light = FacilityCondition::lightDamage()->count();
+        $heavy = FacilityCondition::heavyDamage()->count();
 
-<<<<<<< HEAD
-=======
-        $avgPercentage = InfraCondition::average('percentage');
+        $avgPercentage = FacilityCondition::average('percentage');
 
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
         return [
             Stat::make('Total Kondisi', $total)
-                ->description('Total kondisi infrastruktur')
+                ->description('Total kondisi fasilitas')
                 ->descriptionIcon('heroicon-m-clipboard-document-list')
                 ->color('primary'),
 
-<<<<<<< HEAD
-=======
             Stat::make('Rata-rata Kondisi', round($avgPercentage, 1) . '%')
                 ->description('Rata-rata persentase kondisi')
                 ->descriptionIcon('heroicon-m-chart-bar')
                 ->color('info'),
 
->>>>>>> e8c8ba3ba3e9e4a4d8b5d4b74c2ea726dc0d0153
             Stat::make('Kondisi Baik', $good)
                 ->description(round($total > 0 ? ($good / $total * 100) : 0, 1) . '% dari total')
                 ->descriptionIcon('heroicon-m-check-circle')

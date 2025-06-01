@@ -9,7 +9,17 @@ use Flowframe\Trend\TrendValue;
 
 class SchoolFacilitiesChart extends ChartWidget
 {
-    protected static ?string $heading = 'Statistik Fasilitas Sekolah';
+    protected int | string | array $columnSpan = 'full';
+
+    public function getHeading(): ?string
+    {
+        return 'Statistik Fasilitas Sekolah';
+    }
+
+    public function getDescription(): ?string
+    {
+        return '';
+    }
 
     protected function getData(): array
     {

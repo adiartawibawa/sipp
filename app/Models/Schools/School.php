@@ -6,10 +6,13 @@ use App\Models\Regions\District;
 use App\Models\Regions\Province;
 use App\Models\Regions\Regency;
 use App\Models\Regions\Village;
+use Cviebrock\EloquentSluggable\Sluggable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * Model untuk data sekolah
@@ -38,18 +41,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
-class School extends Model
+class School extends Model implements HasMedia
 {
-    use HasUuids;
+    use HasUuids, Sluggable;
+    use InteractsWithMedia;
 
     protected $table = 'schools';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
 
+    /**
+     * Return the sluggable configuration array for this model.
+     *
+     * @return array
+     */
+    public function sluggable(): array
+    {
+        return [
+            'slug' => [
+                'source' => 'name'
+            ]
+        ];
+    }
+
     protected $fillable = [
         'npsn',
         'name',
+        'slug',
         'nss',
         'edu_type',
         'status',
@@ -83,6 +102,29 @@ class School extends Model
             'accred_year' => 'integer',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+        ];
+    }
+
+    public static function defaultEduType()
+    {
+        return [
+            ['code' => 'TPA', 'name' => 'Tempat Penitipan Anak', 'desc' => 'Tempat Penitipan Anak'],
+            ['code' => 'KB', 'name' => 'Kelompok Belajar', 'desc' => 'Kelompok Belajar'],
+            ['code' => 'TK', 'name' => 'Taman Kanak - Kanak', 'desc' => 'Taman Kanak - Kanak'],
+            ['code' => 'SD', 'name' => 'Sekolah Dasar', 'desc' => 'Sekolah Dasar'],
+            ['code' => 'SMP', 'name' => 'Sekolah Menengah Pertama', 'desc' => 'Sekolah Menengah Pertama'],
+            ['code' => 'SKB', 'name' => 'Sanggar Kegiatan Belajar', 'desc' => 'Sanggar Kegiatan Belajar'],
+            ['code' => 'PKBM', 'name' => 'Pusat Kegiatan Belajar Masyarakat', 'desc' => 'Pusat Kegiatan Belajar Masyarakat'],
+        ];
+    }
+
+    public static function defaultCuriculum()
+    {
+        return [
+            ['code' => 'KBK', 'name' => 'Kurikulum Berbasis Kompetensi', 'desc' => 'Kurikulum Berbasis Kompetensi'],
+            ['code' => 'KTSP', 'name' => 'Kurikulum Tingkat Satuan Pendidikan', 'desc' => 'Kurikulum Tingkat Satuan Pendidikan'],
+            ['code' => 'K13', 'name' => 'Kurikulum 2013', 'desc' => 'Kurikulum 2013'],
+            ['code' => 'Merdeka', 'name' => 'Kurikulum Merdeka', 'desc' => 'Kurikulum Merdeka'],
         ];
     }
 
