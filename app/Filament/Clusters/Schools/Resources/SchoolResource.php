@@ -2,6 +2,7 @@
 
 namespace App\Filament\Clusters\Schools\Resources;
 
+use App\Exports\SchoolsExport;
 use App\Filament\Clusters\Schools;
 use App\Filament\Clusters\Schools\Resources\SchoolResource\Pages;
 use App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
@@ -31,6 +32,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SchoolResource extends Resource
 {
@@ -296,14 +298,13 @@ class SchoolResource extends Resource
                     ]),
                 SelectFilter::make('edu_type')
                     ->label('Jenjang Pendidikan')
-                    ->options([
-                        'tk' => 'TK',
-                        'sd' => 'SD',
-                        'smp' => 'SMP',
-                        'sma' => 'SMA',
-                        'smk' => 'SMK',
-                        'slb' => 'SLB',
-                    ]),
+                    ->options(
+                        collect(School::defaultEduType())
+                            ->mapWithKeys(fn($item) => [
+                                $item['code'] => "{$item['code']} - {$item['name']}"
+                            ])
+                            ->toArray()
+                    ),
                 SelectFilter::make('accreditation')
                     ->label('Akreditasi')
                     ->options([
@@ -335,12 +336,25 @@ class SchoolResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('export')
+                        ->label('Export Selected')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->action(function ($records) {
+                            return Excel::download(new SchoolsExport($records), 'sekolah-export.xlsx');
+                        }),
                 ]),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('exportAll')
+                    ->label('Export All')
+                    ->action(function () {
+                        return Excel::download(new SchoolsExport(), 'semua-sekolah-export.xlsx');
+                    })
             ])
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
             ])
-            ->defaultSort('name', 'asc');
+            ->defaultSort('district_id', 'asc');
     }
 
     public static function getRelations(): array

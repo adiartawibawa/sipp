@@ -31,21 +31,24 @@ class RecentSchoolsTable extends BaseWidget
                 Tables\Columns\TextColumn::make('edu_type')
                     ->label('Jenjang')
                     ->badge()
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
-                        'tk' => 'TK',
-                        'sd' => 'SD',
-                        'smp' => 'SMP',
-                        'sma' => 'SMA',
-                        'smk' => 'SMK',
-                        'slb' => 'SLB',
+                    ->formatStateUsing(function (?string $state) {
+                        $types = collect(School::defaultEduType())->pluck('name', 'code');
+                        return $types[$state] ?? $state ?? 'Unknown';
                     })
-                    ->color(fn(string $state): string => match ($state) {
-                        'tk' => 'info',
-                        'sd' => 'primary',
-                        'smp' => 'success',
-                        'sma' => 'warning',
-                        'smk' => 'danger',
-                        'slb' => 'gray',
+                    ->color(function (?string $state) {
+                        $colors = [
+                            'TPA' => 'info',
+                            'KB' => 'primary',
+                            'TK' => 'success',
+                            'SD' => 'warning',
+                            'SMP' => 'danger',
+                            'SMA' => 'gray',
+                            'SMK' => 'info',
+                            'SLB' => 'primary',
+                            'SKB' => 'success',
+                            'PKBM' => 'warning',
+                        ];
+                        return $colors[$state] ?? 'gray';
                     }),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
