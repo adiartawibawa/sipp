@@ -2,6 +2,8 @@
 
 namespace App\Models\Schools;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -21,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class InfraAcquisition extends Model
 {
+    use HasFactory, HasUuids;
+
     protected $table = 'infra_acquisitions';
     protected $primaryKey = 'id';
     public $incrementing = false;

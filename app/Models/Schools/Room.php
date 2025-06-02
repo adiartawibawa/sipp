@@ -4,6 +4,7 @@ namespace App\Models\Schools;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -42,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class Room extends Model
 {
-    use HasUuids;
+    use HasUuids, HasFactory;
 
     protected $table = 'rooms';
     protected $primaryKey = 'id';
