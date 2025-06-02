@@ -125,7 +125,7 @@ class SchoolInfrastructureSeeder extends Seeder
             foreach ($lands as $land) {
                 $buildings = $buildings->merge(
                     Building::factory()
-                        ->count(rand(2, 5))
+                        ->count(rand(2, 3))
                         ->create([
                             'school_id' => $school->id,
                             'land_id' => $land->id,
@@ -183,7 +183,7 @@ class SchoolInfrastructureSeeder extends Seeder
 
                 // Create rooms in each building
                 $rooms = Room::factory()
-                    ->count(rand(3, 10))
+                    ->count(rand(2, 4))
                     ->create([
                         'school_id' => $school->id,
                         'building_id' => $building->id,
@@ -227,7 +227,7 @@ class SchoolInfrastructureSeeder extends Seeder
 
             // Create other facilities
             $facilities = OtherFacility::factory()
-                ->count(rand(5, 15))
+                ->count(rand(1, 3))
                 ->create([
                     'school_id' => $school->id,
                     'created_by' => $users->random()->id,
