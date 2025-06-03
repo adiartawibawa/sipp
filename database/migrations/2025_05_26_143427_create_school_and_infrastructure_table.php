@@ -52,6 +52,7 @@ return new class extends Migration
         Schema::create('room_refs', function (Blueprint $table) { // room_references
             $table->id();
             $table->string('name')->unique();
+            $table->string('type');
             $table->string('code', 25)->nullable();
             $table->text('desc')->nullable();
             $table->timestamps();
