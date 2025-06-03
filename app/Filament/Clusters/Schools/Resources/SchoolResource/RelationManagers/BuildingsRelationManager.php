@@ -36,6 +36,14 @@ class BuildingsRelationManager extends RelationManager
                     ->required()
                     ->maxLength(255),
 
+                Forms\Components\Select::make('land_id')
+                    ->label('Berdiri diatas Tanah')
+                    ->relationship(
+                        name: 'land',
+                        titleAttribute: 'name',
+                    )
+                    ->required(),
+
                 Forms\Components\Select::make('infra_cat_id')
                     ->label('Kategori Bangunan')
                     ->relationship(
@@ -221,64 +229,66 @@ class BuildingsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('manage_conditions')
-                    ->label('Kondisi')
-                    ->icon('heroicon-m-wrench-screwdriver')
-                    ->modalHeading('Kelola Kondisi Bangunan')
-                    ->action(function (Building $record, array $data): void {
-                        $record->conditions()->create([
-                            'condition' => $data['condition'],
-                            'percentage' => $data['percentage'],
-                            'notes' => $data['notes'],
-                            'checked_at' => $data['checked_at'],
-                        ]);
-                    })
-                    ->form(fn(Building $record) => [
-                        Grid::make(2)
-                            ->schema([
-                                Forms\Components\Select::make('condition')
-                                    ->label('Kondisi')
-                                    ->options(
-                                        collect(InfraCondition::defaultInfraCondition())
-                                            ->mapWithKeys(fn($data) => [
-                                                $data['slug'] => sprintf(
-                                                    "%s (%d%%) - %s",
-                                                    ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
-                                                    $data['percentage'] ?? 0,
-                                                    $data['notes'] ?? ''
-                                                )
-                                            ])
-                                            ->toArray()
-                                    )
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(function ($state, Set $set) {
-                                        $selected = collect(InfraCondition::defaultInfraCondition())
-                                            ->firstWhere('slug', $state);
-                                        if ($selected) {
-                                            $set('percentage', $selected['percentage']);
-                                            $set('notes', $selected['notes']);
-                                        }
-                                    }),
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\Action::make('manage_conditions')
+                        ->label('Kondisi')
+                        ->icon('heroicon-m-wrench-screwdriver')
+                        ->modalHeading('Kelola Kondisi Bangunan')
+                        ->action(function (Building $record, array $data): void {
+                            $record->conditions()->create([
+                                'condition' => $data['condition'],
+                                'percentage' => $data['percentage'],
+                                'notes' => $data['notes'],
+                                'checked_at' => $data['checked_at'],
+                            ]);
+                        })
+                        ->form(fn(Building $record) => [
+                            Grid::make(2)
+                                ->schema([
+                                    Forms\Components\Select::make('condition')
+                                        ->label('Kondisi')
+                                        ->options(
+                                            collect(InfraCondition::defaultInfraCondition())
+                                                ->mapWithKeys(fn($data) => [
+                                                    $data['slug'] => sprintf(
+                                                        "%s (%d%%) - %s",
+                                                        ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
+                                                        $data['percentage'] ?? 0,
+                                                        $data['notes'] ?? ''
+                                                    )
+                                                ])
+                                                ->toArray()
+                                        )
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(function ($state, Set $set) {
+                                            $selected = collect(InfraCondition::defaultInfraCondition())
+                                                ->firstWhere('slug', $state);
+                                            if ($selected) {
+                                                $set('percentage', $selected['percentage']);
+                                                $set('notes', $selected['notes']);
+                                            }
+                                        }),
 
-                                Forms\Components\TextInput::make('percentage')
-                                    ->numeric()
-                                    ->readOnly(),
+                                    Forms\Components\TextInput::make('percentage')
+                                        ->numeric()
+                                        ->readOnly(),
 
-                                Forms\Components\Textarea::make('notes')
-                                    ->readOnly(),
+                                    Forms\Components\Textarea::make('notes')
+                                        ->readOnly(),
 
-                                Forms\Components\DatePicker::make('checked_at')
-                                    ->default(now()),
-                            ]),
-                        // Optional: Tambahkan daftar kondisi
-                        Forms\Components\View::make('filament.clusters.schools.resources.school.modals.building-conditions-table')
-                            ->columnSpanFull()
-                            ->viewData(['building' => $record]),
-                    ])
-                    ->modalWidth('4xl'),
-                Tables\Actions\DeleteAction::make(),
+                                    Forms\Components\DatePicker::make('checked_at')
+                                        ->default(now()),
+                                ]),
+                            // Optional: Tambahkan daftar kondisi
+                            Forms\Components\View::make('filament.clusters.schools.resources.school.modals.building-conditions-table')
+                                ->columnSpanFull()
+                                ->viewData(['building' => $record]),
+                        ])
+                        ->modalWidth('4xl'),
+                    Tables\Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
