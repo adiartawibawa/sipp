@@ -2,9 +2,11 @@
 
 namespace App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
 
+use App\Models\Schools\InfraCondition;
 use App\Models\Schools\Room;
 use App\Models\Schools\RoomReference;
 use Filament\Forms;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -34,6 +36,8 @@ class RoomsRelationManager extends RelationManager
                         name: 'building',
                         titleAttribute: 'name',
                     )
+                    ->searchable()
+                    ->preload()
                     ->required(),
                 Forms\Components\TextInput::make('name')
                     ->label('Nama Ruangan')
@@ -103,12 +107,6 @@ class RoomsRelationManager extends RelationManager
                     ->step(0.01)
                     ->readOnly()
                     ->dehydrated(),
-                Forms\Components\Select::make('building_id')
-                    ->label('Gedung')
-                    ->relationship('building', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->required(),
                 Forms\Components\TextInput::make('floor')
                     ->label('Lantai')
                     ->numeric()
@@ -236,11 +234,65 @@ class RoomsRelationManager extends RelationManager
                 Tables\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                // Tables\Actions\Action::make('conditions')
-                //     ->label('Kondisi')
-                //     ->url(fn(Room $record): string => route('filament.resources.rooms.conditions', $record)),
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\Action::make('manage_conditions')
+                        ->label('Kondisi')
+                        ->icon('heroicon-m-wrench-screwdriver')
+                        ->modalHeading('Kelola Kondisi Bangunan')
+                        ->action(function (Room $record, array $data): void {
+                            $record->conditions()->create([
+                                'condition' => $data['condition'],
+                                'percentage' => $data['percentage'],
+                                'notes' => $data['notes'],
+                                'checked_at' => $data['checked_at'],
+                            ]);
+                        })
+                        ->form(fn(Room $record) => [
+                            Grid::make(2)
+                                ->schema([
+                                    Forms\Components\Select::make('condition')
+                                        ->label('Kondisi')
+                                        ->options(
+                                            collect(InfraCondition::defaultInfraCondition())
+                                                ->mapWithKeys(fn($data) => [
+                                                    $data['slug'] => sprintf(
+                                                        "%s (%d%%) - %s",
+                                                        ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
+                                                        $data['percentage'] ?? 0,
+                                                        $data['notes'] ?? ''
+                                                    )
+                                                ])
+                                                ->toArray()
+                                        )
+                                        ->required()
+                                        ->live()
+                                        ->afterStateUpdated(function ($state, Set $set) {
+                                            $selected = collect(InfraCondition::defaultInfraCondition())
+                                                ->firstWhere('slug', $state);
+                                            if ($selected) {
+                                                $set('percentage', $selected['percentage']);
+                                                $set('notes', $selected['notes']);
+                                            }
+                                        }),
+                                    Forms\Components\TextInput::make('percentage')
+                                        ->numeric()
+                                        ->readOnly(),
+
+                                    Forms\Components\Textarea::make('notes')
+                                        ->readOnly(),
+
+                                    Forms\Components\DatePicker::make('checked_at')
+                                        ->default(now()),
+                                ]),
+                            // Optional: Tambahkan daftar kondisi
+                            Forms\Components\View::make('filament.clusters.schools.resources.school.modals.room-conditions-table')
+                                ->columnSpanFull()
+                                ->viewData(['room' => $record]),
+                        ])
+                        ->modalWidth('4xl'),
+                ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
