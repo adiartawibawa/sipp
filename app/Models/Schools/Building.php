@@ -3,6 +3,7 @@
 namespace App\Models\Schools;
 
 use App\Models\User;
+use Cviebrock\EloquentSluggable\Sluggable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,12 +43,29 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class Building extends Model
 {
-    use HasUuids, HasFactory;
+    use HasUuids, HasFactory, Sluggable;
 
     protected $table = 'buildings';
+
     protected $primaryKey = 'id';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
+
+    /**
+     * Return the sluggable configuration array for this model.
+     *
+     * @return array
+     */
+    public function sluggable(): array
+    {
+        return [
+            'slug' => [
+                'source' => 'name'
+            ]
+        ];
+    }
 
     protected $fillable = [
         'school_id',
@@ -182,6 +200,11 @@ class Building extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function latestCondition()
+    {
+        return $this->morphOne(InfraCondition::class, 'entity')->latestOfMany('checked_at');
     }
 
     /**

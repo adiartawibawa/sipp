@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('npsn')->unique()->nullable();
             $table->string('name');
-            $table->string('slug')->unique()->nullable();
+            $table->string('slug')->nullable();
             $table->string('nss')->unique()->nullable();
             $table->string('edu_type')->nullable(); // education_type
             $table->string('status')->nullable(); // school_status
@@ -43,6 +43,8 @@ return new class extends Migration
         Schema::create('infra_cats', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique(); // Land, Building, etc
+            $table->string('type')->nullable(); // type
+            $table->string('code')->nullable(); // code
             $table->text('desc')->nullable(); // description
             $table->timestamps();
         });
@@ -81,6 +83,7 @@ return new class extends Migration
             $table->foreignUuid('land_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete();
             $table->string('code', 25)->nullable();
             $table->string('name');
+            $table->string('slug')->nullable();
             $table->decimal('length', 10, 2)->nullable();
             $table->decimal('width', 10, 2)->nullable();
             $table->decimal('area', 10, 2)->nullable();
@@ -136,7 +139,7 @@ return new class extends Migration
         Schema::create('infra_conditions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuidMorphs('entity'); // Replaces 'conditionable'
-            $table->enum('condition', ['good', 'light', 'heavy']); // light/heavy damage
+            $table->string('condition'); // light/heavy damage
             $table->string('slug')->nullable();
             $table->decimal('percentage', 5, 2)->default(0);
             $table->text('notes')->nullable();
