@@ -42,6 +42,7 @@ class Land extends Model
     protected $fillable = [
         'school_id',
         'infra_cat_id',
+        'code',
         'name',
         'cert_no',
         'length',
@@ -96,10 +97,10 @@ class Land extends Model
     /**
      * Relasi ke kondisi tanah
      */
-    public function conditions(): MorphMany
-    {
-        return $this->morphMany(InfraCondition::class, 'entity');
-    }
+    // public function conditions(): MorphMany
+    // {
+    //     return $this->morphMany(InfraCondition::class, 'entity');
+    // }
 
     /**
      * Relasi ke status hukum tanah

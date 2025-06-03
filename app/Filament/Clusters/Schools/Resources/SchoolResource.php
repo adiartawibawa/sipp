@@ -360,8 +360,8 @@ class SchoolResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\BuildingsRelationManager::class,
             RelationManagers\LandsRelationManager::class,
+            RelationManagers\BuildingsRelationManager::class,
             RelationManagers\RoomsRelationManager::class,
             RelationManagers\OtherFacilitiesRelationManager::class,
         ];

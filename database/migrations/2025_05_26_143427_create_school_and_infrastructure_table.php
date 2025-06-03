@@ -62,6 +62,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('school_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('infra_cat_id')->constrained('infra_cats')->cascadeOnUpdate()->cascadeOnDelete();
+            $table->string('code', 25)->nullable();
             $table->string('name');
             $table->string('cert_no')->nullable(); // certificate_number
             $table->decimal('length', 10, 2)->nullable();
