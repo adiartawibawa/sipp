@@ -2,10 +2,13 @@
 
 namespace App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
 
+use App\Livewire\InfraAcquisitions\AcquisitionsTable;
 use App\Livewire\InfraDocuments\DocumentsTable;
+use App\Livewire\InfraLegalStatus\LegalStatusTable;
 use App\Models\Schools\InfraCategory;
 use App\Models\Schools\Land;
 use Filament\Forms;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -304,8 +307,141 @@ class LandsRelationManager extends RelationManager
                         ->action(function (array $data, $record) {
                             $record->documents()->create($data);
                         }),
-                    Tables\Actions\Action::make('Riwayat Perolehan')->icon('heroicon-o-paper-clip'),
-                    Tables\Actions\Action::make('Status Hukum')->icon('heroicon-o-scale'),
+                    Tables\Actions\Action::make('Riwayat Perolehan')
+                        ->icon('heroicon-o-paper-clip')
+                        ->modalHeading('Kelola Riwayat Perolehan Tanah')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->form(function ($record) {
+                            return [
+                                Forms\Components\Select::make('source')
+                                    ->options([
+                                        'pembelian' => 'Pembelian',
+                                        'hibah' => 'Hibah',
+                                        'warisan' => 'Warisan',
+                                        'lainnya' => 'Lainnya',
+                                    ])
+                                    ->required()
+                                    ->label('Sumber Perolehan'),
+
+                                Forms\Components\TextInput::make('amount')
+                                    ->numeric()
+                                    ->mask(RawJs::make(<<<'JS'
+                                                $input => {
+                                                    // Hapus semua karakter non-digit kecuali koma
+                                                    let digits = $input.replace(/[^\d,]/g, '');
+
+                                                    // Pisahkan bagian integer dan desimal
+                                                    let [integer, decimal] = digits.split(',');
+
+                                                    // Format bagian integer dengan titik sebagai pemisah ribuan
+                                                    if (integer) {
+                                                        integer = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                                                    }
+
+                                                    // Gabungkan dengan bagian desimal (maksimal 2 digit)
+                                                    let formatted = integer || '';
+                                                    if (decimal !== undefined) {
+                                                        formatted += ',' + decimal.substring(0, 2);
+                                                    }
+
+                                                    return formatted;
+                                                }
+                                            JS))
+                                    ->rules(['numeric', 'min:0'])
+                                    ->stripCharacters(['Rp', '.', ','])
+                                    ->dehydrateStateUsing(function ($state) {
+                                        // Konversi ke format numerik untuk database
+                                        return str_replace(['.', ','], ['', '.'], $state);
+                                    })
+                                    ->required()
+                                    ->label('Nilai Perolehan'),
+
+                                Forms\Components\TextInput::make('year')
+                                    ->numeric()
+                                    ->minValue(1900)
+                                    ->maxValue(now()->year)
+                                    ->required()
+                                    ->label('Tahun Perolehan'),
+
+                                Forms\Components\Select::make('method')
+                                    ->options([
+                                        'tunai' => 'Tunai',
+                                        'kredit' => 'Kredit',
+                                        'barter' => 'Barter',
+                                    ])
+                                    ->label('Metode Perolehan'),
+
+                                Forms\Components\Textarea::make('notes')
+                                    ->label('Catatan')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Section::make('Riwayat Perolehan')
+                                    ->schema([
+                                        Forms\Components\Livewire::make(AcquisitionsTable::class, [
+                                            'record' => $record,
+                                        ]),
+                                    ]),
+                            ];
+                        })
+                        ->action(function (array $data, $record) {
+                            $record->acquisitions()->create($data);
+                        }),
+                    Tables\Actions\Action::make('Status Hukum')
+                        ->icon('heroicon-o-scale')
+                        ->modalHeading('Kelola Status Hukum Tanah')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->form(function ($record) {
+                            return [
+                                Forms\Components\Select::make('status')
+                                    ->options([
+                                        'sertifikat' => 'Sertifikat',
+                                        'girik' => 'Girik',
+                                        'letter_c' => 'Letter C',
+                                        'lainnya' => 'Lainnya',
+                                    ])
+                                    ->required()
+                                    ->label('Status Hukum'),
+
+                                Forms\Components\TextInput::make('doc_no')
+                                    ->label('Nomor Dokumen'),
+
+                                Forms\Components\DatePicker::make('doc_date')
+                                    ->label('Tanggal Dokumen'),
+
+                                SpatieMediaLibraryFileUpload::make('document')
+                                    ->collection('legal_documents')
+                                    ->label('Upload Dokumen')
+                                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                                    ->downloadable()
+                                    ->openable()
+                                    ->previewable()
+                                    ->preserveFilenames()
+                                    ->maxSize(2048),
+
+                                Forms\Components\Textarea::make('notes')
+                                    ->label('Catatan')
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Section::make('Status Hukum Terlampir')
+                                    ->schema([
+                                        Forms\Components\Livewire::make(LegalStatusTable::class, [
+                                            'record' => $record,
+                                        ]),
+                                    ]),
+                            ];
+                        })
+                        ->action(function (array $data, $record) {
+                            $legalStatus = $record->legalStatuses()->create([
+                                'status' => $data['status'],
+                                'doc_no' => $data['doc_no'],
+                                'doc_date' => $data['doc_date'],
+                                'notes' => $data['notes'],
+                            ]);
+
+                            if (isset($data['document'])) {
+                                $legalStatus->addMedia($data['document'])->toMediaCollection('legal_documents');
+                            }
+                        }),
                     Tables\Actions\DeleteAction::make(),
                 ])
             ])

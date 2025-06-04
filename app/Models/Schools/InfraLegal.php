@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * Model untuk status hukum infrastruktur
@@ -20,9 +22,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
-class InfraLegal extends Model
+class InfraLegal extends Model implements HasMedia
 {
     use HasUuids, HasFactory;
+    use InteractsWithMedia;
 
     protected $table = 'infra_legal';
 
@@ -67,5 +70,12 @@ class InfraLegal extends Model
     public function getFullStatusAttribute(): string
     {
         return $this->doc_no ? "{$this->status} (No. {$this->doc_no})" : $this->status;
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('legal_documents')
+            ->singleFile()
+            ->acceptsMimeTypes(['application/pdf', 'image/jpeg', 'image/png']);
     }
 }
