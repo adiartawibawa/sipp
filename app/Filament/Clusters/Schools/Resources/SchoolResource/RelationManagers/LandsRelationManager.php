@@ -9,9 +9,11 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 
 class LandsRelationManager extends RelationManager
@@ -153,9 +155,36 @@ class LandsRelationManager extends RelationManager
                         '12' => 'Lainnya'
                     ]),
                 Forms\Components\TextInput::make('njop')
-                    ->label('NJOP')
-                    ->numeric()
-                    ->step(0.01),
+                    ->label('Nilai Jual Objek Pajak (NJOP)')
+                    ->prefix('Rp')
+                    ->mask(RawJs::make(<<<'JS'
+                    $input => {
+                        // Hapus semua karakter non-digit kecuali koma
+                        let digits = $input.replace(/[^\d,]/g, '');
+
+                        // Pisahkan bagian integer dan desimal
+                        let [integer, decimal] = digits.split(',');
+
+                        // Format bagian integer dengan titik sebagai pemisah ribuan
+                        if (integer) {
+                            integer = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                        }
+
+                        // Gabungkan dengan bagian desimal (maksimal 2 digit)
+                        let formatted = integer || '';
+                        if (decimal !== undefined) {
+                            formatted += ',' + decimal.substring(0, 2);
+                        }
+
+                        return formatted;
+                    }
+                JS))
+                    ->rules(['numeric', 'min:0'])
+                    ->stripCharacters(['Rp', '.', ','])
+                    ->dehydrateStateUsing(function ($state) {
+                        // Konversi ke format numerik untuk database
+                        return str_replace(['.', ','], ['', '.'], $state);
+                    }),
                 Forms\Components\Textarea::make('notes')
                     ->label('Keterangan')
                     ->columnSpanFull(),
@@ -214,8 +243,12 @@ class LandsRelationManager extends RelationManager
                     ->sortable(),
                 Tables\Columns\TextColumn::make('njop')
                     ->label('NJOP')
-                    ->numeric(decimalPlaces: 2)
-                    ->sortable(),
+                    ->formatStateUsing(function ($state) {
+                        $formatted = number_format($state, 2, ',', '.');
+                        return 'IDR ' . $formatted;
+                    })
+                    ->sortable()
+                    ->searchable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('ownership')
