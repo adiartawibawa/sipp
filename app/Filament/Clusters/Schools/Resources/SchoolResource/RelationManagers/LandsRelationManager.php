@@ -2,6 +2,7 @@
 
 namespace App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
 
+use App\Livewire\InfraDocuments\DocumentsTable;
 use App\Models\Schools\InfraCategory;
 use App\Models\Schools\Land;
 use Filament\Forms;
@@ -13,8 +14,6 @@ use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Number;
-use Illuminate\Support\Str;
 
 class LandsRelationManager extends RelationManager
 {
@@ -282,9 +281,31 @@ class LandsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\EditAction::make(),
-                    Tables\Actions\Action::make('Dokumen'),
-                    Tables\Actions\Action::make('Riwayat Perolehan'),
-                    Tables\Actions\Action::make('Status Hukum'),
+                    Tables\Actions\Action::make('Dokumen')
+                        ->icon('heroicon-o-document-check')
+                        ->modalHeading('Kelola Dokumen Tanah')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->form(function ($record) {
+                            return [
+                                Forms\Components\TextInput::make('name')->required()->label('Nama Dokumen'),
+                                Forms\Components\FileUpload::make('path')
+                                    ->disk('public')
+                                    ->directory('infra_docs')
+                                    ->required()
+                                    ->label('Upload Dokumen'),
+                                Forms\Components\Section::make('Dokumen Terlampir')
+                                    ->schema([
+                                        Forms\Components\Livewire::make(DocumentsTable::class, [
+                                            'record' => $record,
+                                        ]),
+                                    ]),
+                            ];
+                        })
+                        ->action(function (array $data, $record) {
+                            $record->documents()->create($data);
+                        }),
+                    Tables\Actions\Action::make('Riwayat Perolehan')->icon('heroicon-o-paper-clip'),
+                    Tables\Actions\Action::make('Status Hukum')->icon('heroicon-o-scale'),
                     Tables\Actions\DeleteAction::make(),
                 ])
             ])

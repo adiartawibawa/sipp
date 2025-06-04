@@ -95,14 +95,6 @@ class Land extends Model
     }
 
     /**
-     * Relasi ke kondisi tanah
-     */
-    // public function conditions(): MorphMany
-    // {
-    //     return $this->morphMany(InfraCondition::class, 'entity');
-    // }
-
-    /**
      * Relasi ke status hukum tanah
      */
     public function legalStatuses(): MorphMany
