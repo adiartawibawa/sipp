@@ -38,7 +38,7 @@ class OtherFacility extends Model
 
     protected $fillable = [
         'school_id',
-        'category',
+        'infra_cat_id',
         'name',
         'code',
         'qty',
@@ -70,11 +70,19 @@ class OtherFacility extends Model
     }
 
     /**
-     * Relasi ke kondisi fasilitas
+     * Relasi ke kategori infrastruktur
      */
-    public function conditions(): HasMany
+    public function category(): BelongsTo
     {
-        return $this->hasMany(FacilityCondition::class, 'facil_id');
+        return $this->belongsTo(InfraCategory::class, 'infra_cat_id');
+    }
+
+    /**
+     * Relasi ke kondisi bangunan
+     */
+    public function conditions(): MorphMany
+    {
+        return $this->morphMany(InfraCondition::class, 'entity');
     }
 
     /**
@@ -124,5 +132,10 @@ class OtherFacility extends Model
     public function scopeWithValueAbove($query, float $value)
     {
         return $query->where('value', '>', $value);
+    }
+
+    public function latestCondition()
+    {
+        return $this->morphOne(InfraCondition::class, 'entity')->latestOfMany('checked_at');
     }
 }

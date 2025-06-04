@@ -49,7 +49,7 @@ class BuildingsRelationManager extends RelationManager
                     ->relationship(
                         name: 'category',
                         titleAttribute: 'name',
-                        modifyQueryUsing: fn(Builder $query) => $query->whereIn('type', ['building', 'other'])
+                        modifyQueryUsing: fn(Builder $query) => $query->whereIn('type', ['building', 'uncategorized'])
                     )
                     ->searchable()
                     ->preload()

@@ -96,17 +96,52 @@ class RoomsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('length')
                     ->label('Panjang (m)')
                     ->numeric()
-                    ->step(0.01),
+                    ->step(0.01)
+                    ->live(debounce: 500) // Update 500ms setelah perubahan
+                    ->afterStateUpdated(function (Get $get, Set $set) {
+                        // Hitung luas ketika panjang diubah
+                        $length = $get('length');
+                        $width = $get('width');
+
+                        if ($length && $width) {
+                            $set('area', round($length * $width, 2));
+                        }
+                    }),
+
                 Forms\Components\TextInput::make('width')
                     ->label('Lebar (m)')
                     ->numeric()
-                    ->step(0.01),
+                    ->step(0.01)
+                    ->live(debounce: 500) // Update 500ms setelah perubahan
+                    ->afterStateUpdated(function (Get $get, Set $set) {
+                        // Hitung luas ketika lebar diubah
+                        $length = $get('length');
+                        $width = $get('width');
+
+                        if ($length && $width) {
+                            $set('area', round($length * $width, 2));
+                        }
+                    }),
+
                 Forms\Components\TextInput::make('area')
                     ->label('Luas (m²)')
                     ->numeric()
                     ->step(0.01)
                     ->readOnly()
-                    ->dehydrated(),
+                    ->dehydrated()
+                    ->afterStateHydrated(function (Get $get, Set $set) {
+                        // Hitung ulang luas ketika data di-load
+                        $length = $get('length');
+                        $width = $get('width');
+
+                        if ($length && $width) {
+                            $set('area', round($length * $width, 2));
+                        }
+
+                        if (!$length || !$width) {
+                            $set('area', null);
+                        }
+                    })->suffix('m²'),
                 Forms\Components\TextInput::make('floor')
                     ->label('Lantai')
                     ->numeric()
@@ -200,7 +235,6 @@ class RoomsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('density')
                     ->label('Kepadatan')
                     ->numeric(2)
-                    ->sortable()
                     ->state(function (Room $record): ?float {
                         return $record->density;
                     }),

@@ -170,7 +170,7 @@ return new class extends Migration
         Schema::create('other_facil', function (Blueprint $table) { // facilities
             $table->uuid('id')->primary();
             $table->foreignUuid('school_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
-            $table->string('category');
+            $table->foreignId('infra_cat_id')->constrained('infra_cats')->cascadeOnUpdate()->cascadeOnDelete();
             $table->string('name');
             $table->string('code')->nullable();
             $table->integer('qty')->default(1); // quantity
