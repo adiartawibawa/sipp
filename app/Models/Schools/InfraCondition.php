@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * Model untuk kondisi infrastruktur
@@ -21,9 +23,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  */
-class InfraCondition extends Model
+class InfraCondition extends Model implements HasMedia
 {
     use HasUuids, HasFactory;
+    use InteractsWithMedia;
 
     protected $table = 'infra_conditions';
     protected $primaryKey = 'id';
@@ -89,35 +92,6 @@ class InfraCondition extends Model
         ];
     }
 
-    // /**
-    //  * Get the default condition by slug
-    //  */
-    // public static function getDefaultBySlug(string $slug): ?array
-    // {
-    //     return collect(static::defaultInfraCondition())
-    //         ->firstWhere('slug', $slug);
-    // }
-
-    // /**
-    //  * Create a new condition from default data
-    //  */
-    // public static function createFromDefault(string $slug, Model $entity): ?InfraCondition
-    // {
-    //     $default = static::getDefaultBySlug($slug);
-
-    //     if (!$default) {
-    //         return null;
-    //     }
-
-    //     return $entity->conditions()->create([
-    //         'condition' => $default['condition'],
-    //         'slug' => $default['slug'],
-    //         'percentage' => $default['percentage'],
-    //         'notes' => $default['notes'],
-    //         'checked_at' => now(),
-    //     ]);
-    // }
-
     /**
      * Relasi polymorphic ke entitas terkait
      */
@@ -148,5 +122,28 @@ class InfraCondition extends Model
     public function scopeHeavyDamage($query)
     {
         return $query->where('condition', 'heavy');
+    }
+
+    /**
+     * Accessor untuk status lengkap dengan persentase
+     */
+    public function getFullConditionAttribute(): string
+    {
+        return "{$this->condition} ({$this->percentage}%)";
+    }
+
+    /**
+     * Accessor untuk format tanggal pemeriksaan
+     */
+    public function getFormattedCheckedAtAttribute(): string
+    {
+        return $this->checked_at?->format('d F Y') ?? '-';
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('condition_photos')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->withResponsiveImages();
     }
 }

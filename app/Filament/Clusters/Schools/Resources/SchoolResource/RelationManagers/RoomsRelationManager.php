@@ -2,11 +2,13 @@
 
 namespace App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
 
+use App\Livewire\InfraConditions\ConditionsTable;
 use App\Models\Schools\InfraCondition;
 use App\Models\Schools\Room;
 use App\Models\Schools\RoomReference;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -275,57 +277,82 @@ class RoomsRelationManager extends RelationManager
                         ->label('Kondisi')
                         ->icon('heroicon-m-wrench-screwdriver')
                         ->modalHeading('Kelola Kondisi Bangunan')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalWidth('7xl')
+                        ->form(function (Room $record) {
+                            return [
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('condition')
+                                            ->label('Kondisi')
+                                            ->options(
+                                                collect(InfraCondition::defaultInfraCondition())
+                                                    ->mapWithKeys(fn($data) => [
+                                                        $data['slug'] => sprintf(
+                                                            "%s (%d%%)",
+                                                            ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
+                                                            $data['percentage'] ?? 0
+                                                        )
+                                                    ])
+                                                    ->toArray()
+                                            )
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                $selected = collect(InfraCondition::defaultInfraCondition())
+                                                    ->firstWhere('slug', $state);
+                                                if ($selected) {
+                                                    $set('percentage', $selected['percentage']);
+                                                    $set('notes', $selected['notes']);
+                                                }
+                                            }),
+                                        Forms\Components\TextInput::make('percentage')
+                                            ->numeric()
+                                            ->suffix('%')
+                                            ->readOnly(),
+
+                                        Forms\Components\Textarea::make('notes')
+                                            ->readOnly()
+                                            ->columnSpan(1),
+
+                                        Forms\Components\DatePicker::make('checked_at')
+                                            ->default(now())
+                                            ->required(),
+
+                                        SpatieMediaLibraryFileUpload::make('photos')
+                                            ->collection('condition_photos')
+                                            ->multiple()
+                                            ->image()
+                                            ->maxFiles(5)
+                                            ->label('Bukti Foto')
+                                            ->downloadable()
+                                            ->previewable()
+                                            ->openable()
+                                            ->preserveFilenames(),
+                                    ]),
+
+                                Forms\Components\Section::make('Riwayat Kondisi')
+                                    ->schema([
+                                        Forms\Components\Livewire::make(ConditionsTable::class, [
+                                            'record' => $record,
+                                        ]),
+                                    ]),
+                            ];
+                        })
                         ->action(function (Room $record, array $data): void {
-                            $record->conditions()->create([
+                            $condition = $record->conditions()->create([
                                 'condition' => $data['condition'],
                                 'percentage' => $data['percentage'],
                                 'notes' => $data['notes'],
                                 'checked_at' => $data['checked_at'],
                             ]);
-                        })
-                        ->form(fn(Room $record) => [
-                            Grid::make(2)
-                                ->schema([
-                                    Forms\Components\Select::make('condition')
-                                        ->label('Kondisi')
-                                        ->options(
-                                            collect(InfraCondition::defaultInfraCondition())
-                                                ->mapWithKeys(fn($data) => [
-                                                    $data['slug'] => sprintf(
-                                                        "%s (%d%%) - %s",
-                                                        ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
-                                                        $data['percentage'] ?? 0,
-                                                        $data['notes'] ?? ''
-                                                    )
-                                                ])
-                                                ->toArray()
-                                        )
-                                        ->required()
-                                        ->live()
-                                        ->afterStateUpdated(function ($state, Set $set) {
-                                            $selected = collect(InfraCondition::defaultInfraCondition())
-                                                ->firstWhere('slug', $state);
-                                            if ($selected) {
-                                                $set('percentage', $selected['percentage']);
-                                                $set('notes', $selected['notes']);
-                                            }
-                                        }),
-                                    Forms\Components\TextInput::make('percentage')
-                                        ->numeric()
-                                        ->readOnly(),
 
-                                    Forms\Components\Textarea::make('notes')
-                                        ->readOnly(),
-
-                                    Forms\Components\DatePicker::make('checked_at')
-                                        ->default(now()),
-                                ]),
-                            // Optional: Tambahkan daftar kondisi
-                            Forms\Components\View::make('filament.clusters.schools.resources.school.modals.room-conditions-table')
-                                ->columnSpanFull()
-                                ->viewData(['room' => $record]),
-                        ])
-                        ->modalWidth('4xl'),
+                            if (isset($data['photos'])) {
+                                foreach ($data['photos'] as $photo) {
+                                    $condition->addMedia($photo)->toMediaCollection('condition_photos');
+                                }
+                            }
+                        }),
                 ]),
             ])
             ->bulkActions([
