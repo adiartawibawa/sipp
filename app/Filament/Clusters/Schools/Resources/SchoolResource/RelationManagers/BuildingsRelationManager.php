@@ -2,16 +2,19 @@
 
 namespace App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
 
+use App\Livewire\InfraConditions\ConditionsTable;
 use App\Models\Schools\Building;
 use App\Models\Schools\InfraCategory;
 use App\Models\Schools\InfraCondition;
 use Filament\Forms;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -91,18 +94,52 @@ class BuildingsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('length')
                     ->label('Panjang (m)')
                     ->numeric()
-                    ->step(0.01),
+                    ->step(0.01)
+                    ->live(debounce: 500) // Update 500ms setelah perubahan
+                    ->afterStateUpdated(function (Get $get, Set $set) {
+                        // Hitung luas ketika panjang diubah
+                        $length = $get('length');
+                        $width = $get('width');
+
+                        if ($length && $width) {
+                            $set('area', round($length * $width, 2));
+                        }
+                    }),
 
                 Forms\Components\TextInput::make('width')
                     ->label('Lebar (m)')
                     ->numeric()
-                    ->step(0.01),
+                    ->step(0.01)
+                    ->live(debounce: 500) // Update 500ms setelah perubahan
+                    ->afterStateUpdated(function (Get $get, Set $set) {
+                        // Hitung luas ketika lebar diubah
+                        $length = $get('length');
+                        $width = $get('width');
+
+                        if ($length && $width) {
+                            $set('area', round($length * $width, 2));
+                        }
+                    }),
 
                 Forms\Components\TextInput::make('area')
                     ->label('Luas (m²)')
                     ->numeric()
                     ->step(0.01)
-                    ->required(),
+                    ->readOnly()
+                    ->dehydrated()
+                    ->afterStateHydrated(function (Get $get, Set $set) {
+                        // Hitung ulang luas ketika data di-load
+                        $length = $get('length');
+                        $width = $get('width');
+
+                        if ($length && $width) {
+                            $set('area', round($length * $width, 2));
+                        }
+
+                        if (!$length || !$width) {
+                            $set('area', null);
+                        }
+                    })->suffix('m²'),
 
                 Forms\Components\Select::make('ownership')
                     ->label('Kepemilikan')
@@ -122,8 +159,35 @@ class BuildingsRelationManager extends RelationManager
 
                 Forms\Components\TextInput::make('asset_value')
                     ->label('Nilai Aset')
-                    ->numeric()
-                    ->step(0.01),
+                    ->prefix('Rp')
+                    ->mask(RawJs::make(<<<'JS'
+                    $input => {
+                        // Hapus semua karakter non-digit kecuali koma
+                        let digits = $input.replace(/[^\d,]/g, '');
+
+                        // Pisahkan bagian integer dan desimal
+                        let [integer, decimal] = digits.split(',');
+
+                        // Format bagian integer dengan titik sebagai pemisah ribuan
+                        if (integer) {
+                            integer = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                        }
+
+                        // Gabungkan dengan bagian desimal (maksimal 2 digit)
+                        let formatted = integer || '';
+                        if (decimal !== undefined) {
+                            formatted += ',' + decimal.substring(0, 2);
+                        }
+
+                        return formatted;
+                    }
+                JS))
+                    ->rules(['numeric', 'min:0'])
+                    ->stripCharacters(['Rp', '.', ','])
+                    ->dehydrateStateUsing(function ($state) {
+                        // Konversi ke format numerik untuk database
+                        return str_replace(['.', ','], ['', '.'], $state);
+                    }),
 
                 Forms\Components\TextInput::make('floors')
                     ->label('Jumlah Lantai')
@@ -235,58 +299,83 @@ class BuildingsRelationManager extends RelationManager
                         ->label('Kondisi')
                         ->icon('heroicon-m-wrench-screwdriver')
                         ->modalHeading('Kelola Kondisi Bangunan')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalWidth('7xl')
+                        ->form(function (Building $record) {
+                            return [
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('condition')
+                                            ->label('Kondisi')
+                                            ->options(
+                                                collect(InfraCondition::defaultInfraCondition())
+                                                    ->mapWithKeys(fn($data) => [
+                                                        $data['slug'] => sprintf(
+                                                            "%s (%d%%)",
+                                                            ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
+                                                            $data['percentage'] ?? 0
+                                                        )
+                                                    ])
+                                                    ->toArray()
+                                            )
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                $selected = collect(InfraCondition::defaultInfraCondition())
+                                                    ->firstWhere('slug', $state);
+                                                if ($selected) {
+                                                    $set('percentage', $selected['percentage']);
+                                                    $set('notes', $selected['notes']);
+                                                }
+                                            }),
+                                        Forms\Components\TextInput::make('percentage')
+                                            ->numeric()
+                                            ->suffix('%')
+                                            ->readOnly(),
+
+                                        Forms\Components\Textarea::make('notes')
+                                            ->readOnly()
+                                            ->columnSpan(1),
+
+                                        Forms\Components\DatePicker::make('checked_at')
+                                            ->default(now())
+                                            ->required(),
+
+                                        SpatieMediaLibraryFileUpload::make('photos')
+                                            ->collection('condition_photos')
+                                            ->multiple()
+                                            ->image()
+                                            ->maxFiles(5)
+                                            ->label('Bukti Foto')
+                                            ->downloadable()
+                                            ->previewable()
+                                            ->openable()
+                                            ->preserveFilenames()
+                                            ->columnSpanFull(),
+                                    ]),
+
+                                Forms\Components\Section::make('Riwayat Kondisi')
+                                    ->schema([
+                                        Forms\Components\Livewire::make(ConditionsTable::class, [
+                                            'record' => $record,
+                                        ]),
+                                    ]),
+                            ];
+                        })
                         ->action(function (Building $record, array $data): void {
-                            $record->conditions()->create([
+                            $condition = $record->conditions()->create([
                                 'condition' => $data['condition'],
                                 'percentage' => $data['percentage'],
                                 'notes' => $data['notes'],
                                 'checked_at' => $data['checked_at'],
                             ]);
-                        })
-                        ->form(fn(Building $record) => [
-                            Grid::make(2)
-                                ->schema([
-                                    Forms\Components\Select::make('condition')
-                                        ->label('Kondisi')
-                                        ->options(
-                                            collect(InfraCondition::defaultInfraCondition())
-                                                ->mapWithKeys(fn($data) => [
-                                                    $data['slug'] => sprintf(
-                                                        "%s (%d%%) - %s",
-                                                        ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
-                                                        $data['percentage'] ?? 0,
-                                                        $data['notes'] ?? ''
-                                                    )
-                                                ])
-                                                ->toArray()
-                                        )
-                                        ->required()
-                                        ->live()
-                                        ->afterStateUpdated(function ($state, Set $set) {
-                                            $selected = collect(InfraCondition::defaultInfraCondition())
-                                                ->firstWhere('slug', $state);
-                                            if ($selected) {
-                                                $set('percentage', $selected['percentage']);
-                                                $set('notes', $selected['notes']);
-                                            }
-                                        }),
 
-                                    Forms\Components\TextInput::make('percentage')
-                                        ->numeric()
-                                        ->readOnly(),
-
-                                    Forms\Components\Textarea::make('notes')
-                                        ->readOnly(),
-
-                                    Forms\Components\DatePicker::make('checked_at')
-                                        ->default(now()),
-                                ]),
-                            // Optional: Tambahkan daftar kondisi
-                            Forms\Components\View::make('filament.clusters.schools.resources.school.modals.building-conditions-table')
-                                ->columnSpanFull()
-                                ->viewData(['building' => $record]),
-                        ])
-                        ->modalWidth('4xl'),
+                            if (isset($data['photos'])) {
+                                foreach ($data['photos'] as $photo) {
+                                    $condition->addMedia($photo)->toMediaCollection('condition_photos');
+                                }
+                            }
+                        }),
                     Tables\Actions\DeleteAction::make(),
                 ]),
             ])

@@ -50,13 +50,12 @@ class ConditionsTable extends Component implements HasForms, HasTable
                     ->date()
                     ->sortable(),
 
-                Tables\Columns\SpatieMediaLibraryImageColumn::make('document')
+                Tables\Columns\SpatieMediaLibraryImageColumn::make('photos')
                     ->label('Bukti Foto')
                     ->collection('condition_photos')
                     ->conversion('thumb')
                     ->size(40)
-                    ->wrap()
-                    ->view('livewire.views.tables.columns.photo-column'),
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('notes')
                     ->label('Catatan')

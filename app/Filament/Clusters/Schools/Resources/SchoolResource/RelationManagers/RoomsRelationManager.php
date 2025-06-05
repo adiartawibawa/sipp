@@ -272,14 +272,13 @@ class RoomsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
                     Tables\Actions\Action::make('manage_conditions')
                         ->label('Kondisi')
                         ->icon('heroicon-m-wrench-screwdriver')
                         ->modalHeading('Kelola Kondisi Bangunan')
                         ->modalSubmitActionLabel('Simpan')
                         ->modalWidth('7xl')
-                        ->form(function (Room $record) {
+                        ->form(function (array $data, Room $record) {
                             return [
                                 Forms\Components\Grid::make(2)
                                     ->schema([
@@ -328,7 +327,8 @@ class RoomsRelationManager extends RelationManager
                                             ->downloadable()
                                             ->previewable()
                                             ->openable()
-                                            ->preserveFilenames(),
+                                            ->preserveFilenames()
+                                            ->columnSpanFull(),
                                     ]),
 
                                 Forms\Components\Section::make('Riwayat Kondisi')
@@ -347,12 +347,13 @@ class RoomsRelationManager extends RelationManager
                                 'checked_at' => $data['checked_at'],
                             ]);
 
-                            if (isset($data['photos'])) {
+                            if (isset($data['photos']) && $condition instanceof InfraCondition) {
                                 foreach ($data['photos'] as $photo) {
                                     $condition->addMedia($photo)->toMediaCollection('condition_photos');
                                 }
                             }
                         }),
+                    Tables\Actions\DeleteAction::make(),
                 ]),
             ])
             ->bulkActions([
