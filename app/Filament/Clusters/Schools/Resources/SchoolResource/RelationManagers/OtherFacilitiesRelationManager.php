@@ -2,6 +2,7 @@
 
 namespace App\Filament\Clusters\Schools\Resources\SchoolResource\RelationManagers;
 
+use App\Livewire\InfraConditions\ConditionsTable;
 use App\Models\Schools\InfraCategory;
 use App\Models\Schools\InfraCondition;
 use App\Models\Schools\OtherFacility;
@@ -14,6 +15,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class OtherFacilitiesRelationManager extends RelationManager
@@ -173,63 +175,103 @@ class OtherFacilitiesRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\EditAction::make(),
-                    Tables\Actions\DeleteAction::make(),
+
                     Tables\Actions\Action::make('manage_conditions')
                         ->label('Kondisi')
                         ->icon('heroicon-m-wrench-screwdriver')
-                        ->modalHeading('Kelola Kondisi Bangunan')
+                        ->modalHeading('Kelola Kondisi Fasilitas Lainnya')
+                        ->modalSubmitActionLabel('Simpan')
+                        ->modalWidth('7xl')
+                        ->form(function (OtherFacility $record) {
+                            return [
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('condition')
+                                            ->label('Kondisi')
+                                            ->options(
+                                                collect(InfraCondition::defaultInfraCondition())
+                                                    ->mapWithKeys(fn($data) => [
+                                                        $data['slug'] => sprintf(
+                                                            "%s (%d%%)",
+                                                            ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
+                                                            $data['percentage'] ?? 0
+                                                        )
+                                                    ])
+                                                    ->toArray()
+                                            )
+                                            ->required()
+                                            ->live()
+                                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                                $selected = collect(InfraCondition::defaultInfraCondition())
+                                                    ->firstWhere('slug', $state);
+                                                if ($selected) {
+                                                    $set('percentage', $selected['percentage']);
+                                                    $set('notes', $selected['notes']);
+                                                }
+                                            }),
+                                        Forms\Components\TextInput::make('percentage')
+                                            ->numeric()
+                                            ->suffix('%')
+                                            ->readOnly(),
+                                        Forms\Components\Textarea::make('notes')
+                                            ->readOnly()
+                                            ->columnSpan(1),
+                                        Forms\Components\DatePicker::make('checked_at')
+                                            ->default(now())
+                                            ->required(),
+                                        Forms\Components\FileUpload::make('photos')
+                                            ->label('Bukti Foto')
+                                            ->multiple()
+                                            ->image()
+                                            ->maxSize(5 * 1024) // 5MB
+                                            ->acceptedFileTypes(['image/*'])
+                                            ->maxFiles(5)
+                                            ->preserveFilenames()
+                                            ->directory('temp/condition-uploads') // sementara
+                                            ->columnSpanFull(),
+                                    ]),
+
+                                Forms\Components\Section::make('Riwayat Kondisi')
+                                    ->schema([
+                                        Forms\Components\Livewire::make(ConditionsTable::class, [
+                                            'record' => $record,
+                                        ]),
+                                    ]),
+                            ];
+                        })
                         ->action(function (OtherFacility $record, array $data): void {
-                            $record->conditions()->create([
+                            // Simpan kondisi terlebih dahulu
+                            $condition = new InfraCondition();
+                            $condition->entity()->associate($record); // relasi polimorfik
+                            $condition->fill([
                                 'condition' => $data['condition'],
+                                'slug' => $data['condition'],
                                 'percentage' => $data['percentage'],
                                 'notes' => $data['notes'],
                                 'checked_at' => $data['checked_at'],
                             ]);
-                        })
-                        ->form(fn(OtherFacility $record) => [
-                            Grid::make(2)
-                                ->schema([
-                                    Forms\Components\Select::make('condition')
-                                        ->label('Kondisi')
-                                        ->options(
-                                            collect(InfraCondition::defaultInfraCondition())
-                                                ->mapWithKeys(fn($data) => [
-                                                    $data['slug'] => sprintf(
-                                                        "%s (%d%%) - %s",
-                                                        ucwords(str_replace('_', ' ', $data['condition'] ?? '')),
-                                                        $data['percentage'] ?? 0,
-                                                        $data['notes'] ?? ''
-                                                    )
-                                                ])
-                                                ->toArray()
-                                        )
-                                        ->required()
-                                        ->live()
-                                        ->afterStateUpdated(function ($state, Set $set) {
-                                            $selected = collect(InfraCondition::defaultInfraCondition())
-                                                ->firstWhere('slug', $state);
-                                            if ($selected) {
-                                                $set('percentage', $selected['percentage']);
-                                                $set('notes', $selected['notes']);
-                                            }
-                                        }),
+                            $condition->save();
 
-                                    Forms\Components\TextInput::make('percentage')
-                                        ->numeric()
-                                        ->readOnly(),
+                            // Upload dan attach file jika ada
+                            if (!empty($data['photos'])) {
+                                foreach ($data['photos'] as $photoPath) {
+                                    $fullPath = storage_path('app/public/' . $photoPath); // path ke file yang diupload ke storage
+                                    try {
+                                        if (file_exists($fullPath)) {
+                                            $condition->addMedia($fullPath)
+                                                ->usingFileName(basename($fullPath))
+                                                ->toMediaCollection('condition_photos');
 
-                                    Forms\Components\Textarea::make('notes')
-                                        ->readOnly(),
+                                            unlink($fullPath);
+                                        }
+                                    } catch (\Throwable $e) {
+                                        Log::warning('Gagal menghapus file sementara: ' . $e->getMessage());
+                                    }
+                                }
+                            }
+                        }),
 
-                                    Forms\Components\DatePicker::make('checked_at')
-                                        ->default(now()),
-                                ]),
-                            // Optional: Tambahkan daftar kondisi
-                            Forms\Components\View::make('filament.clusters.schools.resources.school.modals.other-facil-conditions-table')
-                                ->columnSpanFull()
-                                ->viewData(['other' => $record]),
-                        ])
-                        ->modalWidth('4xl'),
+                    Tables\Actions\DeleteAction::make(),
                 ]),
             ])
             ->bulkActions([
