@@ -26,10 +26,10 @@ class SchoolStatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-o-building-storefront')
                 ->color('warning'),
 
-            Stat::make('Rata-rata Luas Tanah', number_format(School::with('lands')->get()->avg('total_land_area'), 2) . ' m²')
-                ->description('Rata-rata luas tanah per sekolah')
-                ->descriptionIcon('heroicon-o-map')
-                ->color('info'),
+            // Stat::make('Rata-rata Luas Tanah', number_format(School::with('lands')->get()->avg('total_land_area'), 2) . ' m²')
+            //     ->description('Rata-rata luas tanah per sekolah')
+            //     ->descriptionIcon('heroicon-o-map')
+            //     ->color('info'),
         ];
     }
 }
