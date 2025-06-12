@@ -16,6 +16,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class RoomsRelationManager extends RelationManager
@@ -240,6 +241,24 @@ class RoomsRelationManager extends RelationManager
                     ->state(function (Room $record): ?float {
                         return $record->density;
                     }),
+                Tables\Columns\TextColumn::make('latestCondition.condition')
+                    ->label('Kondisi')
+                    ->badge()
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'good' => 'success',
+                        'light_damage' => 'info',
+                        'medium_damage' => 'warning',
+                        'heavy_damage' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                        'good' => 'Baik',
+                        'light_damage' => 'Rusak Ringan',
+                        'medium_damage' => 'Rusak Sedang',
+                        'heavy_damage' => 'Rusak Berat',
+                        default => ucfirst(str_replace('_', ' ', $state)),
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('room_ref_id')
@@ -278,7 +297,7 @@ class RoomsRelationManager extends RelationManager
                         ->modalHeading('Kelola Kondisi Bangunan')
                         ->modalSubmitActionLabel('Simpan')
                         ->modalWidth('7xl')
-                        ->form(function (array $data, Room $record) {
+                        ->form(function (Room $record) {
                             return [
                                 Forms\Components\Grid::make(2)
                                     ->schema([
@@ -309,25 +328,21 @@ class RoomsRelationManager extends RelationManager
                                             ->numeric()
                                             ->suffix('%')
                                             ->readOnly(),
-
                                         Forms\Components\Textarea::make('notes')
                                             ->readOnly()
                                             ->columnSpan(1),
-
                                         Forms\Components\DatePicker::make('checked_at')
                                             ->default(now())
                                             ->required(),
-
-                                        SpatieMediaLibraryFileUpload::make('photos')
-                                            ->collection('condition_photos')
+                                        Forms\Components\FileUpload::make('photos')
+                                            ->label('Bukti Foto')
                                             ->multiple()
                                             ->image()
+                                            ->maxSize(5 * 1024) // 5MB
+                                            ->acceptedFileTypes(['image/*'])
                                             ->maxFiles(5)
-                                            ->label('Bukti Foto')
-                                            ->downloadable()
-                                            ->previewable()
-                                            ->openable()
                                             ->preserveFilenames()
+                                            ->directory('temp/condition-uploads') // sementara
                                             ->columnSpanFull(),
                                     ]),
 
@@ -340,16 +355,33 @@ class RoomsRelationManager extends RelationManager
                             ];
                         })
                         ->action(function (Room $record, array $data): void {
-                            $condition = $record->conditions()->create([
+                            // Simpan kondisi terlebih dahulu
+                            $condition = new InfraCondition();
+                            $condition->entity()->associate($record); // relasi polimorfik
+                            $condition->fill([
                                 'condition' => $data['condition'],
+                                'slug' => $data['condition'],
                                 'percentage' => $data['percentage'],
                                 'notes' => $data['notes'],
                                 'checked_at' => $data['checked_at'],
                             ]);
+                            $condition->save();
 
-                            if (isset($data['photos']) && $condition instanceof InfraCondition) {
-                                foreach ($data['photos'] as $photo) {
-                                    $condition->addMedia($photo)->toMediaCollection('condition_photos');
+                            // Upload dan attach file jika ada
+                            if (!empty($data['photos'])) {
+                                foreach ($data['photos'] as $photoPath) {
+                                    $fullPath = storage_path('app/public/' . $photoPath); // path ke file yang diupload ke storage
+                                    try {
+                                        if (file_exists($fullPath)) {
+                                            $condition->addMedia($fullPath)
+                                                ->usingFileName(basename($fullPath))
+                                                ->toMediaCollection('condition_photos');
+
+                                            unlink($fullPath);
+                                        }
+                                    } catch (\Throwable $e) {
+                                        Log::warning('Gagal menghapus file sementara: ' . $e->getMessage());
+                                    }
                                 }
                             }
                         }),

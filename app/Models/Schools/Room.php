@@ -195,4 +195,12 @@ class Room extends Model
     {
         return $query->where('capacity', '>', $capacity);
     }
+
+    /**
+     *
+     */
+    public function latestCondition()
+    {
+        return $this->morphOne(InfraCondition::class, 'entity')->latestOfMany('checked_at');
+    }
 }
