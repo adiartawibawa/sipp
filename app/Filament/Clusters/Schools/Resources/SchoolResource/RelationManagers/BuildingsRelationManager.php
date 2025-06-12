@@ -13,11 +13,13 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BuildingsRelationManager extends RelationManager
@@ -295,6 +297,7 @@ class BuildingsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\EditAction::make(),
+
                     Tables\Actions\Action::make('manage_conditions')
                         ->label('Kondisi')
                         ->icon('heroicon-m-wrench-screwdriver')
@@ -332,25 +335,21 @@ class BuildingsRelationManager extends RelationManager
                                             ->numeric()
                                             ->suffix('%')
                                             ->readOnly(),
-
                                         Forms\Components\Textarea::make('notes')
                                             ->readOnly()
                                             ->columnSpan(1),
-
                                         Forms\Components\DatePicker::make('checked_at')
                                             ->default(now())
                                             ->required(),
-
-                                        SpatieMediaLibraryFileUpload::make('photos')
-                                            ->collection('condition_photos')
+                                        Forms\Components\FileUpload::make('photos')
+                                            ->label('Bukti Foto')
                                             ->multiple()
                                             ->image()
+                                            ->maxSize(5 * 1024) // 5MB
+                                            ->acceptedFileTypes(['image/*'])
                                             ->maxFiles(5)
-                                            ->label('Bukti Foto')
-                                            ->downloadable()
-                                            ->previewable()
-                                            ->openable()
                                             ->preserveFilenames()
+                                            ->directory('temp/condition-uploads') // sementara
                                             ->columnSpanFull(),
                                     ]),
 
@@ -363,19 +362,37 @@ class BuildingsRelationManager extends RelationManager
                             ];
                         })
                         ->action(function (Building $record, array $data): void {
-                            $condition = $record->conditions()->create([
+                            // Simpan kondisi terlebih dahulu
+                            $condition = new InfraCondition();
+                            $condition->entity()->associate($record); // relasi polimorfik
+                            $condition->fill([
                                 'condition' => $data['condition'],
+                                'slug' => $data['condition'],
                                 'percentage' => $data['percentage'],
                                 'notes' => $data['notes'],
                                 'checked_at' => $data['checked_at'],
                             ]);
+                            $condition->save();
 
-                            if (isset($data['photos'])) {
-                                foreach ($data['photos'] as $photo) {
-                                    $condition->addMedia($photo)->toMediaCollection('condition_photos');
+                            // Upload dan attach file jika ada
+                            if (!empty($data['photos'])) {
+                                foreach ($data['photos'] as $photoPath) {
+                                    $fullPath = storage_path('app/public/' . $photoPath); // path ke file yang diupload ke storage
+                                    try {
+                                        if (file_exists($fullPath)) {
+                                            $condition->addMedia($fullPath)
+                                                ->usingFileName(basename($fullPath))
+                                                ->toMediaCollection('condition_photos');
+
+                                            unlink($fullPath);
+                                        }
+                                    } catch (\Throwable $e) {
+                                        Log::warning('Gagal menghapus file sementara: ' . $e->getMessage());
+                                    }
                                 }
                             }
                         }),
+
                     Tables\Actions\DeleteAction::make(),
                 ]),
             ])
