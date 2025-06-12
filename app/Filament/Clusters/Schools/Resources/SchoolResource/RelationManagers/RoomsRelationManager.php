@@ -291,10 +291,11 @@ class RoomsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\EditAction::make(),
+
                     Tables\Actions\Action::make('manage_conditions')
                         ->label('Kondisi')
                         ->icon('heroicon-m-wrench-screwdriver')
-                        ->modalHeading('Kelola Kondisi Bangunan')
+                        ->modalHeading('Kelola Kondisi Ruangan')
                         ->modalSubmitActionLabel('Simpan')
                         ->modalWidth('7xl')
                         ->form(function (Room $record) {
@@ -385,6 +386,7 @@ class RoomsRelationManager extends RelationManager
                                 }
                             }
                         }),
+
                     Tables\Actions\DeleteAction::make(),
                 ]),
             ])
